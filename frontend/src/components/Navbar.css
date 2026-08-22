@@ -1,0 +1,100 @@
+.navbar {
+    width: min(1180px, calc(100% - 40px));
+    height: 88px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.site-logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    color: #161616;
+    font-size: 1.2rem;
+    font-weight: 900;
+    letter-spacing: .08em;
+}
+
+.logo-mark {
+    width: 36px;
+    height: 36px;
+    display: grid;
+    place-items: center;
+    border-radius: 11px;
+    background: #ff8c38;
+    color: white;
+    box-shadow: 0 8px 20px rgba(255, 140, 56, .24);
+}
+
+.navbar nav {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.navbar nav a,
+.nav-auth-button {
+    padding: 10px 14px;
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    color: #5e564f;
+    font: inherit;
+    font-weight: 650;
+    cursor: pointer;
+    transition: color .2s ease, background .2s ease, transform .2s ease;
+}
+
+.navbar nav a:hover,
+.navbar nav a.active:not(.nav-auth-link),
+.nav-auth-button:hover {
+    background: #ffead0;
+    color: #161616;
+}
+
+.navbar .nav-auth-link,
+.nav-auth-button {
+    margin-left: 4px;
+    background: #161616;
+    color: white;
+}
+
+.navbar .nav-auth-link:hover,
+.navbar .nav-auth-link.active,
+.nav-auth-button:hover {
+    background: #ff8c38;
+    color: white;
+    transform: translateY(-1px);
+}
+
+.user-greeting {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: 4px;
+    color: #51483f;
+    font-size: .88rem;
+    font-weight: 700;
+}
+
+.user-avatar {
+    width: 34px;
+    height: 34px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: #ffead0;
+    color: #c65a0d;
+    font-weight: 850;
+}
+
+@media (max-width: 560px) {
+    .navbar { width: min(100% - 28px, 1180px); height: 76px; }
+    .site-logo { font-size: 0; gap: 0; }
+    .navbar nav { gap: 1px; }
+    .navbar nav a, .nav-auth-button { padding: 9px 10px; font-size: .9rem; }
+    .user-greeting > span:last-child { display: none; }
+    .user-greeting { margin-left: 2px; }
+}
