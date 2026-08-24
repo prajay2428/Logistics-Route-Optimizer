@@ -6,7 +6,7 @@ class Geocoding():
     
 
 
-    def searh_locations(self,address):
+    def search_locations(self,address):
         params = {
             "q":address,
             "format" :"jsonv2",

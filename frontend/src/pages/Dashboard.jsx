@@ -10,7 +10,7 @@ export default function Dashboard(){
                 <h1>Every route. One reliable view.</h1>
                 <p className="hero-copy">Plan smarter, stay informed, and keep your logistics operation moving from a simple, focused dashboard.</p>
                 <div className="hero-actions">
-                    <Link className="primary-button" to="/login">Get started</Link>
+                    <Link className="primary-button" to="/warehouse">Get started</Link>
                     <Link className="secondary-button" to="/About">Learn more</Link>
                 </div>
             </div>

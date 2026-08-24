@@ -8,7 +8,7 @@ export default function Navbar() {
 
     async function handleLogout() {
         try {
-            const response = await fetch("http://127.0.0.1:8000/api/accounts/logout", {
+            const response = await fetch("http://127.0.0.1:8000/api/accounts/logout/", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -46,10 +46,7 @@ export default function Navbar() {
                         <button className="nav-auth-button" type="button" onClick={handleLogout}>Logout</button>
                     </>
                 ) : (
-                    <>
-                        <NavLink to="/signup">Sign up</NavLink>
-                        <NavLink className="nav-auth-link" to="/login">Login</NavLink>
-                    </>
+                    <NavLink className="nav-auth-link" to="/login">Login</NavLink>
                 )}
             </nav>
         </header>

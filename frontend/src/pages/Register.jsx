@@ -13,7 +13,7 @@ export default function Register(){
         setIsSubmitting(true)
 
         try{
-            const response = await fetch("http://127.0.0.1:8000/api/accounts/register",{
+            const response = await fetch("http://127.0.0.1:8000/api/accounts/register/",{
                 method:"POST",
                 body:JSON.stringify(payload),
                 headers:{

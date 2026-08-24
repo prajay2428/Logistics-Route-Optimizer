@@ -15,7 +15,7 @@ export default function Login(){
         setIsSubmitting(true)
         try{
             const payload = Object.fromEntries(formData)
-            const response = await fetch('http://127.0.0.1:8000/api/accounts/login', {
+            const response = await fetch('http://127.0.0.1:8000/api/accounts/login/', {
                 method : 'POST',
                 headers : {
                     'Content-Type' : 'application/json',
@@ -29,7 +29,7 @@ export default function Login(){
 
             const data = await response.json()
             login(data)
-            navigate("/")
+            navigate(location.state?.from?.pathname || "/", { replace: true })
         }
         catch (error){
             console.log("error posting data", error)
