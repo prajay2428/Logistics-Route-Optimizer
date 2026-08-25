@@ -1,10 +1,11 @@
 import { useState } from "react"
 import { useLocation, useNavigate, Link } from "react-router-dom"
 import { useAuth } from "../context/AuthContext"
+import { API_BASE_URL } from "../api"
 import "./Login.css"
 
 export default function Login(){
-    const { login } = useAuth()
+    const { login, csrfToken, refreshCsrfToken } = useAuth()
     const navigate = useNavigate()
     const location = useLocation()
     const [error, setError] = useState("")
@@ -15,10 +16,13 @@ export default function Login(){
         setIsSubmitting(true)
         try{
             const payload = Object.fromEntries(formData)
-            const response = await fetch('http://127.0.0.1:8000/api/accounts/login/', {
+            const requestCsrfToken = csrfToken || await refreshCsrfToken()
+            const response = await fetch(`${API_BASE_URL}/api/accounts/login/`, {
                 method : 'POST',
+                credentials: "include",
                 headers : {
                     'Content-Type' : 'application/json',
+                    'X-CSRFToken': requestCsrfToken,
                 },
                 body : JSON.stringify(payload)
             })

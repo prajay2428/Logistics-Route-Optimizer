@@ -1,11 +1,20 @@
-from django.contrib.auth import get_user_model
+from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
+from django.middleware.csrf import get_token
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_protect
 from .serializers import UserSerializer, RegistrationSerializer,LoginSerializer
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework import status
-from django.contrib.auth import authenticate
-from rest_framework_simplejwt.tokens import RefreshToken
+
+
+class CsrfTokenView(APIView):
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        return Response({"csrfToken": get_token(request)})
 
 class GetUserView(APIView):
     permission_classes=[IsAuthenticated]
@@ -15,6 +24,7 @@ class GetUserView(APIView):
         return Response(user_serializer.data)
 
 
+@method_decorator(csrf_protect, name="dispatch")
 class RegistrationView(APIView):
     permission_classes=[AllowAny]
 
@@ -30,6 +40,7 @@ class RegistrationView(APIView):
             status = status.HTTP_201_CREATED
         )
 
+@method_decorator(csrf_protect, name="dispatch")
 class LoginView(APIView):
     permission_classes = [AllowAny]
 
@@ -51,30 +62,24 @@ class LoginView(APIView):
                 status = status.HTTP_401_UNAUTHORIZED
             )
 
-        refresh = RefreshToken.for_user(user)
+        auth_login(request, user)
 
         return Response({
             "user": UserSerializer(user).data,
-            "access": str(refresh.access_token),
-            "refresh": str(refresh),
+            # Django rotates the CSRF secret at login, so return the new token.
+            "csrfToken": get_token(request),
         })
 
 class LogoutView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        refresh_token = request.data.get("refresh")
-
-        if not refresh_token:
-            return Response(
-                {"detail": "Refresh token required."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        token = RefreshToken(refresh_token)
-        token.blacklist()
+        auth_logout(request)
 
         return Response(
-            {"detail": "Logged out successfully."},
+            {
+                "detail": "Logged out successfully.",
+                "csrfToken": get_token(request),
+            },
             status=status.HTTP_200_OK
         )

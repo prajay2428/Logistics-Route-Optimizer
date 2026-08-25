@@ -1,29 +1,34 @@
 import { NavLink, useNavigate } from "react-router-dom"
 import { useAuth } from "../context/AuthContext"
+import { API_BASE_URL } from "../api"
 import "./Navbar.css"
 
 export default function Navbar() {
-    const { user, accessToken, refreshToken, logout } = useAuth()
+    const { user, csrfToken, logout, refreshCsrfToken } = useAuth()
     const navigate = useNavigate()
 
     async function handleLogout() {
         try {
-            const response = await fetch("http://127.0.0.1:8000/api/accounts/logout/", {
+            const requestCsrfToken = csrfToken || await refreshCsrfToken()
+            const response = await fetch(`${API_BASE_URL}/api/accounts/logout/`, {
                 method: "POST",
+                credentials: "include",
                 headers: {
                     "Content-Type": "application/json",
-                    Authorization: `Bearer ${accessToken}`,
+                    "X-CSRFToken": requestCsrfToken,
                 },
-                body: JSON.stringify({ refresh: refreshToken }),
             })
 
             if (!response.ok) {
                 throw new Error(`HTTP error! STATUS ${response.status}`)
             }
+
+            const data = await response.json()
+            logout(data.csrfToken)
         } catch (error) {
             console.error("Error logging out:", error)
-        } finally {
             logout()
+        } finally {
             navigate("/")
         }
     }

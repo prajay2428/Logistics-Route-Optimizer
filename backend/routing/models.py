@@ -10,4 +10,4 @@ class Warehouse(models.Model):
     latitude = models.DecimalField(max_digits=9,decimal_places=6, blank = True)
 
     def __str__(self):
-        return self.owner
+        return f"{self.owner} {self.name}"

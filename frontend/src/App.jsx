@@ -6,11 +6,16 @@ import About from './pages/About'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Warehouse from './pages/Warehouse'
+import AddWarehouse from './pages/AddWarehouse'
 import { useAuth } from './context/AuthContext'
 
 function ProtectedRoute({ children }) {
-  const { user } = useAuth()
+  const { user, isLoading } = useAuth()
   const location = useLocation()
+
+  if (isLoading) {
+    return <p>Checking your session...</p>
+  }
 
   if (!user) {
     return <Navigate to="/login" state={{ from: location }} replace />
@@ -29,6 +34,14 @@ function App() {
           <Route path="/About" element={<About />} />
           <Route path="/login" element={<Login />} />
           <Route path = "/signup" element = {<Register />} />
+          <Route
+            path="/addwarehouse"
+            element={
+              <ProtectedRoute>
+                <AddWarehouse />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/warehouse"
             element={

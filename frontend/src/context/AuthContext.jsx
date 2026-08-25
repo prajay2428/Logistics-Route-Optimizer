@@ -1,47 +1,93 @@
-import { createContext, useContext, useState } from "react"
+import { createContext, useCallback, useContext, useEffect, useState } from "react"
+import { API_BASE_URL } from "../api"
 
 const AuthContext = createContext()
-const AUTH_STORAGE_KEY = "lro-auth-session"
-
-function getStoredSession() {
-    try {
-        const storedSession = localStorage.getItem(AUTH_STORAGE_KEY)
-        return storedSession
-            ? JSON.parse(storedSession)
-            : { user: null, accessToken: null, refreshToken: null }
-    } catch {
-        localStorage.removeItem(AUTH_STORAGE_KEY)
-        return { user: null, accessToken: null, refreshToken: null }
-    }
-}
 
 export function AuthProvider({ children }) {
-    const [session, setSession] = useState(getStoredSession)
+    const [user, setUser] = useState(null)
+    const [csrfToken, setCsrfToken] = useState(null)
+    const [isLoading, setIsLoading] = useState(true)
 
-    function login(data) {
-        const nextSession = {
-            user: data.user,
-            accessToken: data.access,
-            refreshToken: data.refresh,
+    const refreshCsrfToken = useCallback(async () => {
+        const response = await fetch(`${API_BASE_URL}/api/accounts/csrf/`, {
+            credentials: "include",
+        })
+
+        if (!response.ok) {
+            throw new Error(`Unable to get a CSRF token. STATUS ${response.status}`)
         }
 
-        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(nextSession))
-        setSession(nextSession)
+        const data = await response.json()
+        setCsrfToken(data.csrfToken)
+        return data.csrfToken
+    }, [])
+
+    useEffect(() => {
+        let isCurrent = true
+
+        async function restoreSession() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/accounts/csrf/`, {
+                    credentials: "include",
+                })
+                if (!response.ok) {
+                    throw new Error(`Unable to initialize CSRF. STATUS ${response.status}`)
+                }
+
+                const csrfData = await response.json()
+                if (isCurrent) {
+                    setCsrfToken(csrfData.csrfToken)
+                }
+
+                const userResponse = await fetch(`${API_BASE_URL}/api/accounts/me/`, {
+                    credentials: "include",
+                })
+                if (userResponse.ok) {
+                    const userData = await userResponse.json()
+                    if (isCurrent) {
+                        setUser(userData)
+                    }
+                } else if (isCurrent) {
+                    setUser(null)
+                }
+            } catch (error) {
+                console.error("Unable to restore the session:", error)
+                if (isCurrent) {
+                    setUser(null)
+                }
+            } finally {
+                if (isCurrent) {
+                    setIsLoading(false)
+                }
+            }
+        }
+
+        restoreSession()
+
+        return () => {
+            isCurrent = false
+        }
+    }, [])
+
+    function login(data) {
+        setUser(data.user)
+        setCsrfToken(data.csrfToken)
     }
 
-    function logout() {
-        localStorage.removeItem(AUTH_STORAGE_KEY)
-        setSession({ user: null, accessToken: null, refreshToken: null })
+    function logout(nextCsrfToken = null) {
+        setUser(null)
+        setCsrfToken(nextCsrfToken)
     }
 
     return (
         <AuthContext.Provider
             value={{
-                user: session.user,
-                accessToken: session.accessToken,
-                refreshToken: session.refreshToken,
+                user,
+                csrfToken,
+                isLoading,
                 login,
                 logout,
+                refreshCsrfToken,
             }}
         >
             {children}

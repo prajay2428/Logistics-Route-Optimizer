@@ -1,9 +1,12 @@
 import { useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
+import { useAuth } from "../context/AuthContext"
+import { API_BASE_URL } from "../api"
 import "./Register.css"
 
 export default function Register(){
     const navigate = useNavigate()
+    const { csrfToken, refreshCsrfToken } = useAuth()
     const [error, setError] = useState("")
     const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -13,11 +16,14 @@ export default function Register(){
         setIsSubmitting(true)
 
         try{
-            const response = await fetch("http://127.0.0.1:8000/api/accounts/register/",{
+            const requestCsrfToken = csrfToken || await refreshCsrfToken()
+            const response = await fetch(`${API_BASE_URL}/api/accounts/register/`,{
                 method:"POST",
+                credentials: "include",
                 body:JSON.stringify(payload),
                 headers:{
-                    'Content-Type':'application/json'
+                    'Content-Type':'application/json',
+                    'X-CSRFToken': requestCsrfToken,
                 }
             })
 

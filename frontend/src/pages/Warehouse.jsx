@@ -1,24 +1,35 @@
 import React from "react"
-import { useAuth } from "../context/AuthContext"
+import { Link } from "react-router-dom"
 import WarehouseCard from "../components/WarehouseCard"
+import { API_BASE_URL } from "../api"
 import "./Warehouse.css"
 
 export default function Warehouse(){
-    const { accessToken } = useAuth()
     const [warehouses,setWarehouse] = React.useState([])
+    const [error, setError] = React.useState("")
     React.useEffect(()=> {
-        fetch(
-    "http://127.0.0.1:8000/api/routing/warehouses/",
-    {
-        method: "GET",
-        headers: {
-            "Authorization": `Bearer ${accessToken}`,
-            "Content-Type": "application/json"
+        let isCurrent = true
+
+        fetch(`${API_BASE_URL}/api/routing/warehouses/`, {
+            credentials: "include",
+        })
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error(`Unable to load warehouses. STATUS ${response.status}`)
+                }
+                return response.json()
+            })
+            .then((data) => {
+                if (isCurrent) setWarehouse(data)
+            })
+            .catch((requestError) => {
+                console.error(requestError)
+                if (isCurrent) setError("We couldn't load your warehouses.")
+            })
+
+        return () => {
+            isCurrent = false
         }
-    }).then(response => response.json()).then(data => setWarehouse(data))
-
-    console.log(warehouses)
-
     },[])
     const warehouseList = warehouses.map((warehouse) =>
     {
@@ -35,14 +46,15 @@ export default function Warehouse(){
             </header>
 
             <div className="warehouse-grid">
+                {error && <p className="form-error" role="alert">{error}</p>}
                 {warehouseList}
             </div>
 
             <div className="warehouse-page__footer">
-                <button className="add-warehouse-button" type="button">
+                <Link className="add-warehouse-button" to="/addwarehouse">
                     <span aria-hidden="true">+</span>
                     Add warehouse
-                </button>
+                </Link>
             </div>
         </section>
     )
