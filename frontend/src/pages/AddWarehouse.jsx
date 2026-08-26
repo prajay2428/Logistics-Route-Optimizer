@@ -1,7 +1,7 @@
 import React from "react"
 import { useAuth } from "../context/AuthContext"
 import { API_BASE_URL } from "../api"
-
+import LocationCard from "../components/LocationCard"
 export default function AddWarehouse() {
     const { csrfToken, refreshCsrfToken } = useAuth()
 
@@ -42,6 +42,16 @@ export default function AddWarehouse() {
             setError(error.message)
         }
     }
+    const locationList = locations.map((location) => {
+        return <LocationCard name = {location.display_name} type = {location.type} lon = {location.lon} lat = {location.lat} key={`${location.lat}-${location.lon}`} id ={`${location.lat}-${location.lon}`} fun = {handleClick} /> })
+
+    
+    function handleClick(id){
+        console.log(id)
+
+    }
+
+    
 
     return (
         <>
@@ -62,18 +72,8 @@ export default function AddWarehouse() {
                 <p>{error}</p>
             )}
 
-            {locations.length > 0 && (
-                <div>
-                    {locations.map((location, index) => (
-                        <div key={index}>
-                            <h3>{location.display_name}</h3>
-                            <p>Type: {location.type}</p>
-                            <p>Latitude: {location.lat}</p>
-                            <p>Longitude: {location.lon}</p>
-                        </div>
-                    ))}
-                </div>
-            )}
+            {locations.length > 0 && locationList
+            }
         </>
     )
 }
