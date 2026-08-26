@@ -19,3 +19,10 @@ body { min-width: 320px; }
 a { color: inherit; text-decoration: none; }
 
 button, input { font: inherit; }
+
+
+/* Ensure the map container has a visible height and width */
+.leaflet-container {
+  width: 80%;
+  height: 500px; /* Adjust this value to fit your layout */
+}

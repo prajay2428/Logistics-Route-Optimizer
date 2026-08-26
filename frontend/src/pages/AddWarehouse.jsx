@@ -2,6 +2,7 @@ import React from "react"
 import { useAuth } from "../context/AuthContext"
 import { API_BASE_URL } from "../api"
 import LocationCard from "../components/LocationCard"
+import SimpleMap from "../components/SimpleMap"
 export default function AddWarehouse() {
     const { csrfToken, refreshCsrfToken } = useAuth()
 
@@ -46,14 +47,12 @@ export default function AddWarehouse() {
         return <LocationCard name = {location.display_name} type = {location.type} lon = {location.lon} lat = {location.lat} key={`${location.lat}-${location.lon}`} place_id ={location.place_id} fun = {handleClick} /> })
 
     
-    function handleClick(id){
-        const loc = locations.map((location) => {
-            if (location.place_id === id ){
-                return location
-            }
-        })
-        setSelectedLocation(loc)
+    function handleClick(id) {
+    const loc = locations.find((location) => {
+        return location.place_id === id
+    })
 
+    setSelectedLocation(loc)
     }
     console.log(locations)
     
@@ -80,7 +79,7 @@ export default function AddWarehouse() {
             {Object.keys(selectedLocation).length === 0 && locations.length > 0 && locationList
             }
 
-            {Object.keys(selectedLocation).length !== 0 && <h1>selected</h1>}
+            {Object.keys(selectedLocation).length !== 0 && < SimpleMap latitude={selectedLocation.lat} longitude={selectedLocation.lon} />}
         </>
     )
 }
