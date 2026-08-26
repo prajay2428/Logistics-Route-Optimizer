@@ -1,0 +1,9 @@
+.location-card { display: flex; align-items: center; justify-content: space-between; gap: 22px; padding: 20px; border: 1px solid #eadfd4; border-radius: 12px; background: rgba(255,255,255,.82); box-shadow: 0 8px 24px rgba(74,44,20,.06); transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease; }
+.location-card:hover { transform: translateY(-2px); border-color: #ffc08f; box-shadow: 0 12px 30px rgba(74,44,20,.1); }
+.location-card h3 { margin: 5px 0 10px; color: #2d251f; font-size: 1rem; line-height: 1.45; }
+.location-card__content { min-width: 0; }
+.location-card__type { color: #d96513; font-size: .7rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+.location-card__coordinates { display: flex; flex-wrap: wrap; gap: 14px; margin: 0; color: #76675b; font-size: .82rem; }
+.location-card__button { flex: 0 0 auto; padding: 11px 16px; border: 0; border-radius: 8px; background: #2d251f; color: white; cursor: pointer; font-weight: 700; }
+.location-card__button:hover { background: #ff8c38; }
+@media (max-width: 620px) { .location-card { align-items: stretch; flex-direction: column; } }

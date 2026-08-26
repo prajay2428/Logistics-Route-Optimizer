@@ -1,32 +1,47 @@
-import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from "react-leaflet"
+import { useState } from "react"
+import {
+    MapContainer,
+    TileLayer,
+    useMapEvents,
+} from "react-leaflet"
 import "leaflet/dist/leaflet.css"
+import LocationMarker from "./LocationMarker"
+import "./SimpleMap.css"
 
-function ClickHandler(){
-    useMapEvents({click(e) {
-        const {lat,lng} = e.latlng
-        console.log(lng)
-        console.log(lat)
-    }})
+function ClickHandler({ onLocationSelect }) {
+    useMapEvents({
+        click(e) {
+            console.log("Map clicked:", e.latlng)
+            onLocationSelect(e.latlng)
+        },
+    })
+
+    return null
 }
 
+export default function SimpleMap({ latitude, longitude, onPositionChange }) {
+    const [selectedPosition, setSelectedPosition] = useState(null)
 
-
-export default function SimpleMap({latitude, longitude}) {
+    function handleLocationSelect(position) {
+        setSelectedPosition(position)
+        onPositionChange(position)
+        console.log("Marker position selected:", position)
+    }
 
     return (
         <MapContainer
             center={[Number(latitude), Number(longitude)]}
             zoom={15}
-            style={{
-                height: "700px",
-                width: "80%"
-            }}
+            className="warehouse-map"
         >
             <TileLayer
                 attribution="&copy; OpenStreetMap contributors"
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
-            <ClickHandler />
+
+            <ClickHandler onLocationSelect={handleLocationSelect} />
+
+            {selectedPosition && <LocationMarker position={selectedPosition} />}
         </MapContainer>
     )
 }

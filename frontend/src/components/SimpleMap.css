@@ -1,0 +1,8 @@
+.warehouse-map.leaflet-container {
+    width: 100%;
+    height: clamp(360px, 58vh, 620px);
+    border: 1px solid #dfd3c7;
+    border-radius: 14px;
+    box-shadow: 0 18px 45px rgba(80, 48, 24, .12);
+    z-index: 0;
+}

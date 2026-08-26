@@ -1,0 +1,27 @@
+.add-warehouse-page { width: min(1100px, calc(100% - 40px)); margin: 0 auto; padding: 64px 0 80px; }
+.add-warehouse-page__header { max-width: 700px; margin-bottom: 30px; }
+.add-warehouse-page__header h1 { margin: 0; color: #241d18; font-size: clamp(2rem, 5vw, 3.4rem); letter-spacing: -.045em; }
+.add-warehouse-page__header > p:last-child { color: #75675c; font-size: 1.05rem; line-height: 1.7; }
+.location-search-panel, .warehouse-builder { padding: clamp(20px, 4vw, 36px); border: 1px solid #eadfd4; border-radius: 18px; background: rgba(255,255,255,.68); box-shadow: 0 18px 50px rgba(74,44,20,.08); }
+.location-search-form label, .warehouse-details-form > label { display: block; margin-bottom: 9px; color: #3c3129; font-size: .86rem; font-weight: 800; }
+.location-search-form__controls { display: flex; gap: 12px; }
+.location-search-form input, .warehouse-details-form > input { width: 100%; min-height: 50px; padding: 0 15px; border: 1px solid #d9cdc2; border-radius: 9px; outline: none; background: white; color: #241d18; }
+.location-search-form input:focus, .warehouse-details-form > input:focus { border-color: #ff8c38; box-shadow: 0 0 0 3px rgba(255,140,56,.15); }
+.location-search-form button, .warehouse-submit-row button { min-height: 50px; padding: 0 22px; border: 0; border-radius: 9px; background: #ff8c38; color: white; cursor: pointer; font-weight: 800; }
+.location-search-form button:hover, .warehouse-submit-row button:hover { background: #e87625; }
+.location-results { display: grid; gap: 13px; margin-top: 26px; }
+.selected-address { position: relative; margin: 20px 0 16px; padding: 16px 150px 16px 18px; border-radius: 10px; background: #fff4e8; }
+.selected-address span { color: #c95c10; font-size: .72rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.selected-address p { margin: 6px 0 0; color: #4f4238; line-height: 1.5; }
+.selected-address button { position: absolute; top: 50%; right: 16px; padding: 8px 10px; transform: translateY(-50%); border: 1px solid #d9bda7; border-radius: 7px; background: transparent; color: #9f4a10; cursor: pointer; font-weight: 700; }
+.map-instruction { margin: 0 0 10px; color: #75675c; font-size: .9rem; }
+.warehouse-submit-row { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-top: 20px; }
+.warehouse-submit-row p { margin: 0; color: #6f6258; font-size: .88rem; }
+.warehouse-ready-message { margin: 18px 0 0; padding: 14px 16px; border-radius: 9px; background: #e8f6e9; color: #286234; font-weight: 650; }
+.add-warehouse-error { padding: 13px 16px; border: 1px solid #f0b8b2; border-radius: 9px; background: #fff0ee; color: #a92c20; }
+@media (max-width: 620px) {
+    .add-warehouse-page { width: min(100% - 24px, 1100px); padding-top: 38px; }
+    .location-search-form__controls, .warehouse-submit-row { align-items: stretch; flex-direction: column; }
+    .selected-address { padding-right: 16px; }
+    .selected-address button { position: static; margin-top: 12px; transform: none; }
+}
