@@ -7,7 +7,7 @@ export default function AddWarehouse() {
 
     const [locations, setLocations] = React.useState([])
     const [error, setError] = React.useState("")
-
+    const [selectedLocation,setSelectedLocation] = React.useState({})
     async function handleSubmit(formData) {
         try {
             setError("")
@@ -43,19 +43,24 @@ export default function AddWarehouse() {
         }
     }
     const locationList = locations.map((location) => {
-        return <LocationCard name = {location.display_name} type = {location.type} lon = {location.lon} lat = {location.lat} key={`${location.lat}-${location.lon}`} id ={`${location.lat}-${location.lon}`} fun = {handleClick} /> })
+        return <LocationCard name = {location.display_name} type = {location.type} lon = {location.lon} lat = {location.lat} key={`${location.lat}-${location.lon}`} place_id ={location.place_id} fun = {handleClick} /> })
 
     
     function handleClick(id){
-        console.log(id)
+        const loc = locations.map((location) => {
+            if (location.place_id === id ){
+                return location
+            }
+        })
+        setSelectedLocation(loc)
 
     }
-
+    console.log(locations)
     
 
     return (
         <>
-            <form action={handleSubmit}>
+           {Object.keys(selectedLocation).length === 0 && <form action={handleSubmit}>
                 <label>
                     Address:
                     <input
@@ -66,14 +71,16 @@ export default function AddWarehouse() {
                 </label>
 
                 <button type="submit">Search</button>
-            </form>
+            </form>}
 
             {error && (
                 <p>{error}</p>
             )}
 
-            {locations.length > 0 && locationList
+            {Object.keys(selectedLocation).length === 0 && locations.length > 0 && locationList
             }
+
+            {Object.keys(selectedLocation).length !== 0 && <h1>selected</h1>}
         </>
     )
 }

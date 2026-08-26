@@ -12,6 +12,7 @@ class AddressSerializer(serializers.Serializer):
     address = serializers.CharField(max_length = 300)
 
 class CoordinateSerializer(serializers.Serializer):
+    place_id = serializers.IntegerField()
     display_name = serializers.CharField()
     type = serializers.CharField()
     lat = serializers.DecimalField(max_digits=9,decimal_places=6)

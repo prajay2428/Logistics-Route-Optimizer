@@ -5,7 +5,8 @@ export default function LocationCard(props){
         <h2> {props.type}</h2>
         <h2> {props.lon}</h2>
         <h2> {props.lat}</h2>
-        <button onClick = {() => {return props.fun(props.id)}}>select this location </button>
+        <h2> {props.place_id} </h2>
+        <button onClick = {() => {return props.fun(props.place_id)}}>select this location </button>
         </>
     )
 }

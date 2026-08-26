@@ -31,6 +31,7 @@ class Geocoding():
 
         for info in data:
             result = {
+                "place_id" : info["place_id"],
                 "display_name" : info["display_name"],
                 "type" : info["type"],
                 "lat" : info["lat"],
