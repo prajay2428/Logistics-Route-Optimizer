@@ -17,3 +17,8 @@ class CoordinateSerializer(serializers.Serializer):
     type = serializers.CharField()
     lat = serializers.DecimalField(max_digits=9,decimal_places=6)
     lon = serializers.DecimalField(max_digits=9,decimal_places=6)
+
+class NameCoordinateSerializer(serializers.Serializer):
+    name = serializers.CharField()
+    lon = serializers.DecimalField(max_digits=9,decimal_places=6)
+    lat = serializers.DecimalField(max_digits=9,decimal_places=6)

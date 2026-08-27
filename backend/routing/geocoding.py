@@ -40,3 +40,4 @@ class Geocoding():
             results.append(result)
 
         return results
+    
