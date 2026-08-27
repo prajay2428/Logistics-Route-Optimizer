@@ -33,7 +33,7 @@ class RoutingManager():
         response.raise_for_status()
 
         data = response.json()
-        print(data)
+        
         matrix = data['distances']
 
         rows,cols = len(matrix),len(matrix[0])
