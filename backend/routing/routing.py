@@ -2,7 +2,8 @@ import requests
 class RoutingManager():
 
     def __init__(self):
-        self.BASE_URL = "http://router.project-osrm.org/table/v1/driving/"
+        self.BASE_URL_TABLE = "http://router.project-osrm.org/table/v1/driving/"
+        self.BASE_URL_ROUTE = "http://router.project-osrm.org/route/v1/driving/"
 
 
     def get_distance_matrix(self,coords):
@@ -15,7 +16,7 @@ class RoutingManager():
 
         coordinates = coordinates[:-1]
 
-        url = self.BASE_URL + coordinates
+        url = self.BASE_URL_TABLE + coordinates
 
         params = {
             "annotations" : "distance",

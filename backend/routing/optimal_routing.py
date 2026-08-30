@@ -1,74 +1,59 @@
-"""Simple Travelling Salesperson Problem (TSP) between cities."""
-
 from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
 
 
+class TSPSolver:
 
-def create_data_model(distance_matrix):
-    """Stores the data for the problem."""
-    data = {}
-    data["distance_matrix"] = distance_matrix
-    data["num_vehicles"] = 1
-    data["depot"] = 0
-    return data
+    def __init__(self, distance_matrix):
+        self.distance_matrix = distance_matrix
+        self.num_vehicles = 1
+        self.depot = 0
 
+    def solve_tsp(self):
+        manager = pywrapcp.RoutingIndexManager(
+            len(self.distance_matrix),
+            self.num_vehicles,
+            self.depot
+        )
 
+        routing = pywrapcp.RoutingModel(manager)
 
-def get_routes(solution, routing, manager):
-    """Get vehicle routes from a solution and store them in an array."""
-    # Get vehicle routes and store them in a two dimensional array whose
-    # i,j entry is the jth location visited by vehicle i along its route.
-    routes = []
-    for route_nbr in range(routing.vehicles()):
-        index = routing.Start(route_nbr)
-        route = [manager.IndexToNode(index)]
-        while not routing.IsEnd(index):
-            index = solution.Value(routing.NextVar(index))
-            route.append(manager.IndexToNode(index))
-        routes.append(route)
-    return routes
+        def distance_callback(from_index, to_index):
+            from_node = manager.IndexToNode(from_index)
+            to_node = manager.IndexToNode(to_index)
 
+            return self.distance_matrix[from_node][to_node]
 
-def solve_tsp(distance_matrix):
-    """Entry point of the program."""
-    # Instantiate the data problem.
-    data = create_data_model(distance_matrix=distance_matrix)
+        transit_callback_index = routing.RegisterTransitCallback(
+            distance_callback
+        )
 
-    # Create the routing index manager.
-    manager = pywrapcp.RoutingIndexManager(
-        len(data["distance_matrix"]), data["num_vehicles"], data["depot"]
-    )
+        routing.SetArcCostEvaluatorOfAllVehicles(
+            transit_callback_index
+        )
 
-    # Create Routing Model.
-    routing = pywrapcp.RoutingModel(manager)
+        search_parameters = pywrapcp.DefaultRoutingSearchParameters()
 
+        search_parameters.first_solution_strategy = (
+            routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
+        )
 
-    def distance_callback(from_index, to_index):
-        """Returns the distance between the two nodes."""
-        # Convert from routing variable Index to distance matrix NodeIndex.
-        from_node = manager.IndexToNode(from_index)
-        to_node = manager.IndexToNode(to_index)
-        return data["distance_matrix"][from_node][to_node]
+        solution = routing.SolveWithParameters(search_parameters)
 
-    transit_callback_index = routing.RegisterTransitCallback(distance_callback)
+        if not solution:
+            return None
 
-    # Define cost of each arc.
-    routing.SetArcCostEvaluatorOfAllVehicles(transit_callback_index)
+        routes = []
 
-    # Setting first solution heuristic.
-    search_parameters = pywrapcp.DefaultRoutingSearchParameters()
-    search_parameters.first_solution_strategy = (
-        routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
-    )
+        for vehicle in range(routing.vehicles()):
+            index = routing.Start(vehicle)
 
-    # Solve the problem.
-    solution = routing.SolveWithParameters(search_parameters)
+            route = [manager.IndexToNode(index)]
 
-    # Print solution on console.
-    if solution:
-        
-        route_list = get_routes(solution=solution,routing=routing,manager=manager)
+            while not routing.IsEnd(index):
+                index = solution.Value(routing.NextVar(index))
+                route.append(manager.IndexToNode(index))
 
-    return route_list
+            routes.append(route)
 
+        return routes
