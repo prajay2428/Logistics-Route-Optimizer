@@ -18,6 +18,9 @@ class CoordinateSerializer(serializers.Serializer):
     lat = serializers.DecimalField(max_digits=9,decimal_places=6)
     lon = serializers.DecimalField(max_digits=9,decimal_places=6)
 
+class SaveLocationSerializer(CoordinateSerializer):
+    address = serializers.CharField(max_length=300)
+
 class NameCoordinateSerializer(serializers.Serializer):
     name = serializers.CharField()
     lon = serializers.DecimalField(max_digits=9,decimal_places=6)
@@ -30,3 +33,4 @@ class LocationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Location
         fields = ['search_query','display_name','place_id','type','lat','lon']
+        read_only_fields = ['search_query']

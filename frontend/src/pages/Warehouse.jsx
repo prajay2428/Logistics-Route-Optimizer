@@ -33,7 +33,7 @@ export default function Warehouse(){
     },[])
     const warehouseList = warehouses.map((warehouse) =>
     {
-        return <WarehouseCard key={warehouse.id} name={warehouse.name} address={warehouse.address} />
+        return <WarehouseCard key={warehouse.id} name={warehouse.name} address={warehouse.address} id = {warehouse.id} />
 
     })
 

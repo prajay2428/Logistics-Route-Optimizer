@@ -7,6 +7,7 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import Warehouse from './pages/Warehouse'
 import AddWarehouse from './pages/AddWarehouse'
+import UseWarehouse from './pages/UseWarehouse'
 import { useAuth } from './context/AuthContext'
 
 function ProtectedRoute({ children }) {
@@ -49,6 +50,13 @@ function App() {
                 <Warehouse />
               </ProtectedRoute>
             }
+          />
+          <Route path = "/warehouse/:id" element = {
+            <ProtectedRoute>
+              <UseWarehouse />
+            </ProtectedRoute>
+        
+          }
           />
         </Routes>
       </main>

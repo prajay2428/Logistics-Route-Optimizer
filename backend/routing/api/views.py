@@ -1,13 +1,14 @@
 from ..models import Warehouse,Location
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from .serializers import WarehouseSerializer, AddressSerializer,CoordinateSerializer,NameCoordinateSerializer,LocationSerializer
+from .serializers import WarehouseSerializer, AddressSerializer,CoordinateSerializer,NameCoordinateSerializer,LocationSerializer,SaveLocationSerializer
 from rest_framework.views import APIView
 from rest_framework import status
 from ..geocoding import Geocoding
 from ..routing import RoutingManager
 from ..optimal_routing import TSPSolver
 from django.utils.text import slugify
+from django.shortcuts import get_object_or_404
 
 class RegisterWarehouseView(APIView):
     permission_classes = [IsAuthenticated]
@@ -52,6 +53,16 @@ class WarehouseListView(APIView):
             status = status.HTTP_200_OK
         )
 
+class WarehouseDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self,request,id):
+        warehouse = get_object_or_404(Warehouse,id =id,owner = request.user)
+        serializer = WarehouseSerializer(warehouse)
+        return Response(
+            serializer.data,
+            status=status.HTTP_200_OK
+        )
 
 class DeliveryLocationListView(APIView):
     permission_classes = [IsAuthenticated]
@@ -79,17 +90,18 @@ class DeliveryLocationListView(APIView):
 class SaveLocationView(APIView):
     permission_classes=[IsAuthenticated]
     def post(self,request):
-        serializer = LocationSerializer(data = request.data)
+        serializer = SaveLocationSerializer(data = request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
+        search_query = slugify(data['address'])
         location, _ = Location.objects.get_or_create(
-            search_query=data['search_query'],
+            search_query=search_query,
             place_id=data['place_id'],
             defaults={
                 'display_name': data['display_name'],
                 'type': data['type'],
-                'latitude': data['latitude'],
-                'longitude': data['longitude'],
+                'latitude': data['lat'],
+                'longitude': data['lon'],
             },
         )
         return Response(

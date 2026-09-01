@@ -1,6 +1,6 @@
 import "./LocationCard.css"
 
-export default function LocationCard({ name, type, lon, lat, place_id, fun }) {
+export default function LocationCard({ name, type, lon, lat, place_id, fun, disabled = false }) {
     return (
         <article className="location-card">
             <div className="location-card__content">
@@ -11,8 +11,8 @@ export default function LocationCard({ name, type, lon, lat, place_id, fun }) {
                     <span>Lng {Number(lon).toFixed(5)}</span>
                 </p>
             </div>
-            <button className="location-card__button" type="button" onClick={() => fun(place_id)}>
-                Select location
+            <button className="location-card__button" type="button" onClick={() => fun(place_id)} disabled={disabled}>
+                {disabled ? "Saving…" : "Select location"}
             </button>
         </article>
     )

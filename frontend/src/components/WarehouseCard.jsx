@@ -1,4 +1,6 @@
-export default function WarehouseCard({ name, address }){
+import { Link } from "react-router-dom"
+export default function WarehouseCard({ name, address, id }){
+    
     return (
         <article className="warehouse-card">
             <div className="warehouse-card__icon" aria-hidden="true">
@@ -14,10 +16,10 @@ export default function WarehouseCard({ name, address }){
                 <p className="warehouse-card__address">{address}</p>
             </div>
 
-            <button className="warehouse-card__button" type="button">
+            <Link className="warehouse-card__button" to={`/warehouse/${id}`}>
                 Use warehouse
                 <span aria-hidden="true">→</span>
-            </button>
+            </Link>
         </article>
     )
 }
