@@ -31,6 +31,7 @@ class RoutingManager():
             headers=headers,
             timeout=10
         )
+        
         response.raise_for_status()
 
         data = response.json()
@@ -44,6 +45,49 @@ class RoutingManager():
                 matrix[r][c] = int(matrix[r][c] * 10)
 
         return matrix
+
+    def get_optimal_route(self,coords):
+
+
+        coordinates =""
+        for lon,lat in coords:
+            coordinates +=str(lon)+','+str(lat)+';'
+
+        
+        coordinates = coordinates[:-1]
+        
+        url = self.BASE_URL_ROUTE + coordinates
+
+        params = {
+            "geometries" : "geojson",
+            "overview" : "full"
+        }
+        headers = {
+                    "User-Agent" : "LRO-route-optimizer/1.0"
+                }
+        
+        response = requests.get(
+            url,
+            params=params,
+            headers=headers,
+            timeout=10
+        )
+        
+        response.raise_for_status()
+        data = response.json()
+        route = data["routes"][0]
+        geometry = route["geometry"]
+        distance = route["distance"]
+        duration = route["duration"]
+
+        final_data = {
+            "geometry" : geometry,
+            "distance" : distance,
+            "duration" : duration
+        }
+
+        return final_data
+
 
 
 

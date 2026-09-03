@@ -34,3 +34,23 @@ class LocationSerializer(serializers.ModelSerializer):
         model = Location
         fields = ['search_query','display_name','place_id','type','lat','lon']
         read_only_fields = ['search_query']
+
+class DeliveryLocationSerializer(serializers.Serializer):
+    name = serializers.CharField()
+    coordinates = serializers.ListField(
+        child = serializers.DecimalField(max_digits=9,decimal_places=6)
+    )
+class GeometrySerializer(serializers.Serializer):
+    type = serializers.CharField()
+
+    coordinates = serializers.ListField(
+        child=serializers.ListField(
+            child=serializers.FloatField()
+        )
+    )
+
+
+class RouteResultSerializer(serializers.Serializer):
+    geometry = GeometrySerializer()
+    distance = serializers.FloatField()
+    duration = serializers.FloatField()

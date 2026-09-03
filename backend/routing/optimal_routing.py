@@ -56,4 +56,4 @@ class TSPSolver:
 
             routes.append(route)
 
-        return routes
+        return routes[0]

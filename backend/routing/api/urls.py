@@ -8,5 +8,6 @@ urlpatterns = [
     path('get/warehouse/<int:id>/',views.WarehouseDetailView.as_view(),name = "get_warehouse"),
     path("add/warehouse/", views.RegisterWarehouseView.as_view(), name="add-warehouse"),
     path('delivery/locations/', views.DeliveryLocationListView.as_view(), name = "delivery_locations"),
-    path('save/location/',views.SaveLocationView.as_view(),name="save_location")
+    path('save/location/',views.SaveLocationView.as_view(),name="save_location"),
+    path('get/route/',views.GetOptimalRouteView.as_view(),name="get_route"),
 ]

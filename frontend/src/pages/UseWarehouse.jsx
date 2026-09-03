@@ -142,32 +142,52 @@ export default function UseWarehouse() {
             fun={handleLocationSelect} disabled={savingPlaceId !== null} />
     ))
 
-    function handleClick(){
-        const deliveryCoordinates = deliveryLocations.map(location =>
-        [Number(location.lon), Number(location.lon)])
+    async function handleClick() {
+    const requestCsrfToken = await getRequestCsrfToken()
 
-        const coordinates = [
-            [Number(warehouseDetail.longitude),Number(warehouseDetail.latitude)],
-            ...deliveryCoordinates,
-        ]
-        const response = await fetch("get_route_url",{
-            method:"POST",
-            credentials:"include",
-            headers:{
-                "Content-Type" : "application/json",
-                "X-CSRFToken" : requestCsrfToken
+    const deliveryCoordinates = deliveryLocations.map(location => ({
+        name: location.display_name,
+        coordinates: [
+            Number(location.lon),
+            Number(location.lat),
+        ],
+    }))
 
-            },
-            body : JSON.stringify({coordinates}),
+    const coordinates = [
+        {
+            name: warehouseDetail.name,
+            coordinates: [
+                Number(warehouseDetail.longitude),
+                Number(warehouseDetail.latitude),
+            ],
+        },
+        ...deliveryCoordinates,
+    ]
+    console.log(coordinates)
+    try{
 
-            // handling the response (displaying it in leaflet)
-
-
-
-        })
-           
-    
+    const response = await fetch(`${API_BASE_URL}/api/routing/get/route/`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": requestCsrfToken,
+        },
+        body: JSON.stringify(coordinates ),
+    })
+    const routePath = await response.json()
+    if(!response.ok){
+        throw new Error(routePath.detail || "error in the response")
     }
+    console.log(routePath)
+}
+catch(error){
+    console.error("error in the response")
+
+}
+
+    
+}
 
     return (
         <main className="use-warehouse-page">

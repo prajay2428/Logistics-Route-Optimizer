@@ -9,7 +9,10 @@ from ..routing import RoutingManager
 from ..optimal_routing import TSPSolver
 from django.utils.text import slugify
 from django.shortcuts import get_object_or_404
-
+from .serializers import DeliveryLocationSerializer,RouteResultSerializer,GeometrySerializer
+from ..routing import RoutingManager
+from ..optimal_routing import TSPSolver
+from django.db import transaction
 class RegisterWarehouseView(APIView):
     permission_classes = [IsAuthenticated]
     def post(self,request):
@@ -108,3 +111,45 @@ class SaveLocationView(APIView):
             LocationSerializer(location).data,
             status=status.HTTP_200_OK
         )
+
+
+class GetOptimalRouteView(APIView):
+    permission_classes=[IsAuthenticated]
+
+    def post(self,request):
+        serializer = DeliveryLocationSerializer(data = request.data,many=True)
+        if not serializer.is_valid():
+            print(serializer.errors)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        
+        loc_names = []
+        for point in data:
+            loc_names.append(point['name'])
+        coordinates = []
+
+        for point in data:
+            coordinates.append(point['coordinates'])
+
+        rm = RoutingManager()
+        distance_matrix = rm.get_distance_matrix(coordinates)
+        tsp = TSPSolver(distance_matrix=distance_matrix)
+        routes = tsp.solve_tsp()
+        route_coordinates = []
+        print("routes",routes)
+        print("coordinates",coordinates)
+        for route_index in routes:
+            route_coordinates.append(coordinates[route_index])
+
+        route_path = rm.get_optimal_route(route_coordinates)
+
+        route_serializer = RouteResultSerializer(route_path)
+
+        return Response(
+            route_serializer.data,
+            status=status.HTTP_200_OK
+        )
+
+
+
+        
