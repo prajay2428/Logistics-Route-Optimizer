@@ -1,10 +1,116 @@
 import React from "react"
 import { useParams } from "react-router-dom"
+import { divIcon } from "leaflet"
+import { MapContainer, Marker, Polyline, Popup, TileLayer, useMap } from "react-leaflet"
+import "leaflet/dist/leaflet.css"
 import { API_BASE_URL } from "../api"
 import { useAuth } from "../context/AuthContext"
 import DeliveryLocationCard from "../components/DeliveryLocationCard"
 import LocationCard from "../components/LocationCard"
 import "./UseWarehouse.css"
+
+const warehouseIcon = divIcon({
+    className: "route-marker route-marker--warehouse",
+    html: "<span>W</span>",
+    iconSize: [36, 36],
+    iconAnchor: [18, 18],
+})
+
+const deliveryIcon = divIcon({
+    className: "route-marker route-marker--delivery",
+    html: "<span></span>",
+    iconSize: [24, 24],
+    iconAnchor: [12, 12],
+})
+
+const startIcon = divIcon({
+    className: "route-endpoint route-endpoint--start",
+    html: "<span>S</span>",
+    iconSize: [30, 30],
+    iconAnchor: [32, 15],
+})
+
+const endIcon = divIcon({
+    className: "route-endpoint route-endpoint--end",
+    html: "<span>E</span>",
+    iconSize: [30, 30],
+    iconAnchor: [-2, 15],
+})
+
+function formatDuration(seconds) {
+    const hours = Math.floor(seconds / 3600)
+    const minutes = Math.round((seconds % 3600) / 60)
+    return `${hours ? `${hours} hr ` : ""}${minutes} min`
+}
+
+function formatDistance(meters) {
+    return `${(meters / 1000).toFixed(2)} km`
+}
+
+function RouteBounds({ positions }) {
+    const map = useMap()
+
+    React.useEffect(() => {
+        if (positions.length > 1) map.fitBounds(positions, { padding: [24, 24] })
+    }, [map, positions])
+
+    return null
+}
+
+function RouteArrows({ positions }) {
+    const map = useMap()
+    const [arrows, setArrows] = React.useState([])
+
+    React.useEffect(() => {
+        function updateArrows() {
+            const nextArrows = []
+            const spacing = 120
+            let distanceUntilArrow = spacing / 2
+
+            for (let index = 1; index < positions.length; index += 1) {
+                const start = map.latLngToLayerPoint(positions[index - 1])
+                const end = map.latLngToLayerPoint(positions[index])
+                const deltaX = end.x - start.x
+                const deltaY = end.y - start.y
+                const segmentLength = Math.hypot(deltaX, deltaY)
+
+                while (segmentLength >= distanceUntilArrow) {
+                    const ratio = distanceUntilArrow / segmentLength
+                    nextArrows.push({
+                        position: map.layerPointToLatLng([
+                            start.x + deltaX * ratio,
+                            start.y + deltaY * ratio,
+                        ]),
+                        angle: Math.atan2(deltaY, deltaX) * 180 / Math.PI + 90,
+                    })
+                    distanceUntilArrow += spacing
+                }
+
+                distanceUntilArrow -= segmentLength
+            }
+
+            setArrows(nextArrows)
+        }
+
+        updateArrows()
+        map.on("zoomend moveend", updateArrows)
+        return () => map.off("zoomend moveend", updateArrows)
+    }, [map, positions])
+
+    return arrows.map((arrow, index) => (
+        <Marker
+            key={`${index}-${arrow.position.lat}-${arrow.position.lng}`}
+            position={arrow.position}
+            interactive={false}
+            icon={divIcon({
+                className: "route-arrow",
+                html: `<span style="transform: rotate(${arrow.angle}deg)">▲</span>`,
+                iconSize: [18, 18],
+                iconAnchor: [9, 9],
+            })}
+        />
+    ))
+}
 
 export default function UseWarehouse() {
     const { csrfToken, refreshCsrfToken } = useAuth()
@@ -16,7 +122,12 @@ export default function UseWarehouse() {
     const [isSearching, setIsSearching] = React.useState(false)
     const [savingPlaceId, setSavingPlaceId] = React.useState(null)
     const [error, setError] = React.useState("")
-    const [deliveryLocationCoordinates,setDeliveryLocationCoordinates] = React.useState([])
+    const [distance,setDistance] = React.useState(null)
+    const [duration,setDuration] = React.useState(null)
+    const [geometry,setGeometry] = React.useState([])
+    const [unoptimizedDistance, setUnoptimizedDistance] = React.useState(null)
+    const [unoptimizedDuration, setUnoptimizedDuration] = React.useState(null)
+    const [routeOrder, setRouteOrder] = React.useState([])
 
     const params = useParams()
     const id = Number(params.id)
@@ -30,10 +141,6 @@ export default function UseWarehouse() {
                 if (!response.ok) throw new Error("Failed to fetch warehouse")
                 const data = await response.json()
                 setWarehouseDetail(data)
-                setDeliveryLocationCoordinates([
-
-                    [Number(data.longitude), Number(data.latitude)],
-                ])
             } catch (requestError) {
                 console.error(requestError)
                 setError(requestError.message)
@@ -180,14 +287,30 @@ export default function UseWarehouse() {
         throw new Error(routePath.detail || "error in the response")
     }
     console.log(routePath)
+    setDistance(routePath.optimized.distance)
+    setDuration(routePath.optimized.duration)
+    setGeometry(routePath.optimized.geometry)
+    setUnoptimizedDistance(routePath.unoptimized.distance)
+    setUnoptimizedDuration(routePath.unoptimized.duration)
+    setRouteOrder(routePath.route.map(index => ({
+        locationIndex: index,
+        name: index === 0 ? "Warehouse" : coordinates[index].name.trim().split(/\s+/)[0],
+    })))
 }
-catch(error){
-    console.error("error in the response")
+catch(requestError){
+    console.error("error in the response", requestError)
 
 }
 
     
 }
+
+    const routePositions = geometry?.coordinates?.map(([longitude, latitude]) => (
+        [Number(latitude), Number(longitude)]
+    )) || []
+
+    const savedDistance = unoptimizedDistance - distance
+    const savedDuration = unoptimizedDuration - duration
 
     return (
         <main className="use-warehouse-page">
@@ -245,6 +368,86 @@ catch(error){
                 {error && <p className="use-warehouse-error" role="alert">{error}</p>}
             </section>
             <button className="get-route-button" type="button" onClick={handleClick}>Get route</button>
+            {routePositions.length > 0 && (
+                <section className="route-result">
+                    <div className="route-result__heading">
+                        <div>
+                            <span>Optimized route</span>
+                            <h2>Your delivery plan</h2>
+                        </div>
+                        <strong>{deliveryLocations.length} {deliveryLocations.length === 1 ? "stop" : "stops"}</strong>
+                    </div>
+                    <div className="route-navigation" aria-label="Optimized route order">
+                        <p>Route order</p>
+                        <ol>
+                            {routeOrder.map((routeStop, index) => (
+                                <li key={`${routeStop.locationIndex}-${index}`}>
+                                    <span>{index === 0 ? "S" : index === routeOrder.length - 1 ? "E" : index}</span>
+                                    <strong>{routeStop.name}</strong>
+                                </li>
+                            ))}
+                        </ol>
+                    </div>
+                    <div className="route-metrics">
+                        <article className="route-metric route-metric--optimized">
+                            <span>Optimized</span>
+                            <strong>{formatDistance(distance)}</strong>
+                            <small>{formatDuration(duration)}</small>
+                        </article>
+                        <article className="route-metric">
+                            <span>Original route</span>
+                            <strong>{formatDistance(unoptimizedDistance)}</strong>
+                            <small>{formatDuration(unoptimizedDuration)}</small>
+                        </article>
+                        <article className="route-metric route-metric--saved">
+                            <span>You save</span>
+                            <strong>{formatDistance(savedDistance)}</strong>
+                            <small>{formatDuration(savedDuration)}</small>
+                        </article>
+                    </div>
+                    <div className="route-map-wrap">
+                        <div className="route-map-legend" aria-label="Map legend">
+                            <span><i className="route-map-legend__warehouse">W</i>Warehouse</span>
+                            <span><i className="route-map-legend__stop"></i>Delivery</span>
+                            <span><i className="route-map-legend__start">S</i>Start</span>
+                            <span><i className="route-map-legend__end">E</i>End</span>
+                        </div>
+                        <MapContainer center={routePositions[0]} zoom={13} className="route-map">
+                            <TileLayer
+                                attribution="&copy; OpenStreetMap contributors"
+                                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                            />
+                            <Polyline positions={routePositions} pathOptions={{ color: "#e87625", weight: 5 }} />
+                            <RouteArrows positions={routePositions} />
+                            <Marker position={routePositions[0]} icon={startIcon}>
+                                <Popup><strong>Warehouse</strong><br />Route start</Popup>
+                            </Marker>
+                            <Marker position={routePositions[routePositions.length - 1]} icon={endIcon}>
+                                <Popup><strong>Warehouse</strong><br />Route end</Popup>
+                            </Marker>
+                            <Marker
+                                position={[Number(warehouseDetail.latitude), Number(warehouseDetail.longitude)]}
+                                icon={warehouseIcon}
+                            >
+                                <Popup><strong>Warehouse</strong></Popup>
+                            </Marker>
+                            {routeOrder.slice(1, -1).map((routeStop, index) => {
+                                const location = deliveryLocations[routeStop.locationIndex - 1]
+                                return (
+                                <Marker
+                                    key={location.clientId}
+                                    position={[Number(location.lat), Number(location.lon)]}
+                                    icon={deliveryIcon}
+                                >
+                                    <Popup><strong>Stop {index + 1}</strong><br />{location.display_name}</Popup>
+                                </Marker>
+                                )
+                            })}
+                            <RouteBounds positions={routePositions} />
+                        </MapContainer>
+                    </div>
+                </section>
+            )}
         </main>
     )
 }

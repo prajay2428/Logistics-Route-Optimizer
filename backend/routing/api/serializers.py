@@ -54,3 +54,12 @@ class RouteResultSerializer(serializers.Serializer):
     geometry = GeometrySerializer()
     distance = serializers.FloatField()
     duration = serializers.FloatField()
+
+class DistanceDurationSerializer(serializers.Serializer):
+    distance = serializers.FloatField()
+    duration = serializers.FloatField()
+
+class RouteSerializer(serializers.Serializer):
+    route = serializers.ListField(
+        child = serializers.IntegerField()
+    )

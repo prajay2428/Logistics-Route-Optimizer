@@ -9,7 +9,7 @@ from ..routing import RoutingManager
 from ..optimal_routing import TSPSolver
 from django.utils.text import slugify
 from django.shortcuts import get_object_or_404
-from .serializers import DeliveryLocationSerializer,RouteResultSerializer,GeometrySerializer
+from .serializers import DeliveryLocationSerializer,RouteResultSerializer,GeometrySerializer,DistanceDurationSerializer,RouteSerializer
 from ..routing import RoutingManager
 from ..optimal_routing import TSPSolver
 from django.db import transaction
@@ -136,17 +136,33 @@ class GetOptimalRouteView(APIView):
         tsp = TSPSolver(distance_matrix=distance_matrix)
         routes = tsp.solve_tsp()
         route_coordinates = []
-        print("routes",routes)
-        print("coordinates",coordinates)
+        
         for route_index in routes:
             route_coordinates.append(coordinates[route_index])
 
-        route_path = rm.get_optimal_route(route_coordinates)
+        
 
-        route_serializer = RouteResultSerializer(route_path)
+        route_path = rm.get_optimal_route(route_coordinates)
+        unoptimized_coordinates = [*coordinates,coordinates[0]]
+        unoptimized_path = rm.get_optimal_route(coords=unoptimized_coordinates)
+
+        unoptimized_data = {
+            'distance' : unoptimized_path['distance'],
+            'duration' : unoptimized_path['duration']
+        }
+        route_data = {
+            'route' : routes
+        }
+        unoptimized_route_serializer = DistanceDurationSerializer(unoptimized_data)
+        route_order_serializer = RouteSerializer(route_data)
+        optimized_route_serializer = RouteResultSerializer(route_path)
 
         return Response(
-            route_serializer.data,
+            {
+            'optimized':optimized_route_serializer.data,
+            'unoptimized' : unoptimized_route_serializer.data,
+            'route' : route_order_serializer.data['route']
+            },
             status=status.HTTP_200_OK
         )
 
