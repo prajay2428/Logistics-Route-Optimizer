@@ -118,8 +118,6 @@ class GetOptimalRouteView(APIView):
 
     def post(self,request):
         serializer = DeliveryLocationSerializer(data = request.data,many=True)
-        if not serializer.is_valid():
-            print(serializer.errors)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
         
@@ -132,7 +130,20 @@ class GetOptimalRouteView(APIView):
             coordinates.append(point['coordinates'])
 
         rm = RoutingManager()
-        distance_matrix = rm.get_distance_matrix(coordinates)
+        distance_matrix,duration_matrix = rm.get_distance_matrix(coordinates)
+        unoptimized_distance = 0
+        unoptimized_duration = 0
+        for i in range(len(distance_matrix)-1):
+            unoptimized_distance += distance_matrix[i][i+1]
+
+        unoptimized_distance += distance_matrix[len(distance_matrix)-1][0]
+
+        for i in range(len(duration_matrix)-1):
+                unoptimized_duration += duration_matrix[i][i+1]
+        
+        unoptimized_duration += duration_matrix[len(duration_matrix)-1][0]
+
+            
         tsp = TSPSolver(distance_matrix=distance_matrix)
         routes = tsp.solve_tsp()
         route_coordinates = []
@@ -142,13 +153,15 @@ class GetOptimalRouteView(APIView):
 
         
 
-        route_path = rm.get_optimal_route(route_coordinates)
-        unoptimized_coordinates = [*coordinates,coordinates[0]]
-        unoptimized_path = rm.get_optimal_route(coords=unoptimized_coordinates)
+        route_path = rm.get_optimal_route(
+            route_coordinates,
+            operation="optimized route geometry request",
+        )
+        
 
         unoptimized_data = {
-            'distance' : unoptimized_path['distance'],
-            'duration' : unoptimized_path['duration']
+            'distance' : unoptimized_distance,
+            'duration' : unoptimized_duration
         }
         route_data = {
             'route' : routes

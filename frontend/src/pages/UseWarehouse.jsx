@@ -16,26 +16,23 @@ const warehouseIcon = divIcon({
     iconAnchor: [18, 18],
 })
 
-const deliveryIcon = divIcon({
-    className: "route-marker route-marker--delivery",
-    html: "<span></span>",
-    iconSize: [24, 24],
-    iconAnchor: [12, 12],
-})
+function createDeliveryIcon(number) {
+    return divIcon({
+        className: "route-marker route-marker--delivery",
+        html: `<span>${number}</span>`,
+        iconSize: [32, 32],
+        iconAnchor: [16, 16],
+    })
+}
 
-const startIcon = divIcon({
-    className: "route-endpoint route-endpoint--start",
-    html: "<span>S</span>",
-    iconSize: [30, 30],
-    iconAnchor: [32, 15],
-})
+function formatLocationLabel(displayName) {
+    const parts = String(displayName || "")
+        .split(",")
+        .map(part => part.trim())
+        .filter(Boolean)
 
-const endIcon = divIcon({
-    className: "route-endpoint route-endpoint--end",
-    html: "<span>E</span>",
-    iconSize: [30, 30],
-    iconAnchor: [-2, 15],
-})
+    return parts.slice(0, 2).join(" · ") || "Delivery stop"
+}
 
 function formatDuration(seconds) {
     const hours = Math.floor(seconds / 3600)
@@ -57,61 +54,6 @@ function RouteBounds({ positions }) {
     return null
 }
 
-function RouteArrows({ positions }) {
-    const map = useMap()
-    const [arrows, setArrows] = React.useState([])
-
-    React.useEffect(() => {
-        function updateArrows() {
-            const nextArrows = []
-            const spacing = 120
-            let distanceUntilArrow = spacing / 2
-
-            for (let index = 1; index < positions.length; index += 1) {
-                const start = map.latLngToLayerPoint(positions[index - 1])
-                const end = map.latLngToLayerPoint(positions[index])
-                const deltaX = end.x - start.x
-                const deltaY = end.y - start.y
-                const segmentLength = Math.hypot(deltaX, deltaY)
-
-                while (segmentLength >= distanceUntilArrow) {
-                    const ratio = distanceUntilArrow / segmentLength
-                    nextArrows.push({
-                        position: map.layerPointToLatLng([
-                            start.x + deltaX * ratio,
-                            start.y + deltaY * ratio,
-                        ]),
-                        angle: Math.atan2(deltaY, deltaX) * 180 / Math.PI + 90,
-                    })
-                    distanceUntilArrow += spacing
-                }
-
-                distanceUntilArrow -= segmentLength
-            }
-
-            setArrows(nextArrows)
-        }
-
-        updateArrows()
-        map.on("zoomend moveend", updateArrows)
-        return () => map.off("zoomend moveend", updateArrows)
-    }, [map, positions])
-
-    return arrows.map((arrow, index) => (
-        <Marker
-            key={`${index}-${arrow.position.lat}-${arrow.position.lng}`}
-            position={arrow.position}
-            interactive={false}
-            icon={divIcon({
-                className: "route-arrow",
-                html: `<span style="transform: rotate(${arrow.angle}deg)">▲</span>`,
-                iconSize: [18, 18],
-                iconAnchor: [9, 9],
-            })}
-        />
-    ))
-}
-
 export default function UseWarehouse() {
     const { csrfToken, refreshCsrfToken } = useAuth()
     const [warehouseDetail, setWarehouseDetail] = React.useState({})
@@ -128,6 +70,7 @@ export default function UseWarehouse() {
     const [unoptimizedDistance, setUnoptimizedDistance] = React.useState(null)
     const [unoptimizedDuration, setUnoptimizedDuration] = React.useState(null)
     const [routeOrder, setRouteOrder] = React.useState([])
+    const [isLoadingRoute, setIsLoadingRoute] = React.useState(false)
 
     const params = useParams()
     const id = Number(params.id)
@@ -250,60 +193,57 @@ export default function UseWarehouse() {
     ))
 
     async function handleClick() {
-    const requestCsrfToken = await getRequestCsrfToken()
+        try {
+            setError("")
+            setIsLoadingRoute(true)
+            const requestCsrfToken = await getRequestCsrfToken()
+            const deliveryCoordinates = deliveryLocations.map(location => ({
+                name: location.display_name,
+                coordinates: [Number(location.lon), Number(location.lat)],
+            }))
+            const coordinates = [
+                {
+                    name: warehouseDetail.name,
+                    coordinates: [
+                        Number(warehouseDetail.longitude),
+                        Number(warehouseDetail.latitude),
+                    ],
+                },
+                ...deliveryCoordinates,
+            ]
 
-    const deliveryCoordinates = deliveryLocations.map(location => ({
-        name: location.display_name,
-        coordinates: [
-            Number(location.lon),
-            Number(location.lat),
-        ],
-    }))
+            const response = await fetch(`${API_BASE_URL}/api/routing/get/route/`, {
+                method: "POST",
+                credentials: "include",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": requestCsrfToken,
+                },
+                body: JSON.stringify(coordinates),
+            })
+            const routePath = await response.json()
+            if (!response.ok) {
+                throw new Error(routePath.detail || "Failed to load the route")
+            }
 
-    const coordinates = [
-        {
-            name: warehouseDetail.name,
-            coordinates: [
-                Number(warehouseDetail.longitude),
-                Number(warehouseDetail.latitude),
-            ],
-        },
-        ...deliveryCoordinates,
-    ]
-    console.log(coordinates)
-    try{
-
-    const response = await fetch(`${API_BASE_URL}/api/routing/get/route/`, {
-        method: "POST",
-        credentials: "include",
-        headers: {
-            "Content-Type": "application/json",
-            "X-CSRFToken": requestCsrfToken,
-        },
-        body: JSON.stringify(coordinates ),
-    })
-    const routePath = await response.json()
-    if(!response.ok){
-        throw new Error(routePath.detail || "error in the response")
+            setDistance(routePath.optimized.distance)
+            setDuration(routePath.optimized.duration)
+            setGeometry(routePath.optimized.geometry)
+            setUnoptimizedDistance(routePath.unoptimized.distance)
+            setUnoptimizedDuration(routePath.unoptimized.duration)
+            setRouteOrder(routePath.route.map(index => ({
+                locationIndex: index,
+                name: index === 0
+                    ? warehouseDetail.name || "Warehouse"
+                    : formatLocationLabel(coordinates[index].name),
+            })))
+        } catch (requestError) {
+            console.error("Route loading failed:", requestError)
+            setError(requestError.message)
+        } finally {
+            setIsLoadingRoute(false)
+        }
     }
-    console.log(routePath)
-    setDistance(routePath.optimized.distance)
-    setDuration(routePath.optimized.duration)
-    setGeometry(routePath.optimized.geometry)
-    setUnoptimizedDistance(routePath.unoptimized.distance)
-    setUnoptimizedDuration(routePath.unoptimized.duration)
-    setRouteOrder(routePath.route.map(index => ({
-        locationIndex: index,
-        name: index === 0 ? "Warehouse" : coordinates[index].name.trim().split(/\s+/)[0],
-    })))
-}
-catch(requestError){
-    console.error("error in the response", requestError)
-
-}
-
-    
-}
 
     const routePositions = geometry?.coordinates?.map(([longitude, latitude]) => (
         [Number(latitude), Number(longitude)]
@@ -367,7 +307,18 @@ catch(requestError){
 
                 {error && <p className="use-warehouse-error" role="alert">{error}</p>}
             </section>
-            <button className="get-route-button" type="button" onClick={handleClick}>Get route</button>
+            <button className="get-route-button" type="button" onClick={handleClick} disabled={isLoadingRoute}>
+                {isLoadingRoute ? "Loading route…" : "Get route"}
+            </button>
+            {isLoadingRoute && (
+                <div className="route-loading-screen" role="status" aria-live="polite" aria-label="Loading route">
+                    <div className="route-loading-screen__content">
+                        <span className="route-loading-screen__spinner" aria-hidden="true"></span>
+                        <strong>Finding the best route</strong>
+                        <p>Calculating travel times and optimizing your stops…</p>
+                    </div>
+                </div>
+            )}
             {routePositions.length > 0 && (
                 <section className="route-result">
                     <div className="route-result__heading">
@@ -382,7 +333,7 @@ catch(requestError){
                         <ol>
                             {routeOrder.map((routeStop, index) => (
                                 <li key={`${routeStop.locationIndex}-${index}`}>
-                                    <span>{index === 0 ? "S" : index === routeOrder.length - 1 ? "E" : index}</span>
+                                    <span>{routeStop.locationIndex === 0 ? "W" : index}</span>
                                     <strong>{routeStop.name}</strong>
                                 </li>
                             ))}
@@ -408,38 +359,31 @@ catch(requestError){
                     <div className="route-map-wrap">
                         <div className="route-map-legend" aria-label="Map legend">
                             <span><i className="route-map-legend__warehouse">W</i>Warehouse</span>
-                            <span><i className="route-map-legend__stop"></i>Delivery</span>
-                            <span><i className="route-map-legend__start">S</i>Start</span>
-                            <span><i className="route-map-legend__end">E</i>End</span>
+                            <span><i className="route-map-legend__stop">1</i>Stop order</span>
                         </div>
                         <MapContainer center={routePositions[0]} zoom={13} className="route-map">
                             <TileLayer
                                 attribution="&copy; OpenStreetMap contributors"
                                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                             />
-                            <Polyline positions={routePositions} pathOptions={{ color: "#e87625", weight: 5 }} />
-                            <RouteArrows positions={routePositions} />
-                            <Marker position={routePositions[0]} icon={startIcon}>
-                                <Popup><strong>Warehouse</strong><br />Route start</Popup>
-                            </Marker>
-                            <Marker position={routePositions[routePositions.length - 1]} icon={endIcon}>
-                                <Popup><strong>Warehouse</strong><br />Route end</Popup>
-                            </Marker>
+                            <Polyline positions={routePositions} pathOptions={{ color: "#fff", weight: 9, opacity: .9 }} />
+                            <Polyline positions={routePositions} pathOptions={{ color: "#d95f0e", weight: 5, opacity: 1 }} />
                             <Marker
                                 position={[Number(warehouseDetail.latitude), Number(warehouseDetail.longitude)]}
                                 icon={warehouseIcon}
                             >
-                                <Popup><strong>Warehouse</strong></Popup>
+                                <Popup><strong>{warehouseDetail.name || "Warehouse"}</strong><br />Route starts and ends here</Popup>
                             </Marker>
                             {routeOrder.slice(1, -1).map((routeStop, index) => {
                                 const location = deliveryLocations[routeStop.locationIndex - 1]
+                                if (!location) return null
                                 return (
                                 <Marker
                                     key={location.clientId}
                                     position={[Number(location.lat), Number(location.lon)]}
-                                    icon={deliveryIcon}
+                                    icon={createDeliveryIcon(index + 1)}
                                 >
-                                    <Popup><strong>Stop {index + 1}</strong><br />{location.display_name}</Popup>
+                                    <Popup><strong>Stop {index + 1}: {routeStop.name}</strong><br />{location.display_name}</Popup>
                                 </Marker>
                                 )
                             })}

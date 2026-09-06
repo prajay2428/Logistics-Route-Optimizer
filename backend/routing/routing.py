@@ -1,4 +1,15 @@
 import requests
+from time import perf_counter
+
+
+def _print_external_service_timing(service, operation, started_at):
+    elapsed = perf_counter() - started_at
+    print(
+        f"[PERF][EXTERNAL SERVICE] {service} | {operation} | {elapsed:.3f}s",
+        flush=True,
+    )
+
+
 class RoutingManager():
 
     def __init__(self):
@@ -19,34 +30,42 @@ class RoutingManager():
         url = self.BASE_URL_TABLE + coordinates
 
         params = {
-            "annotations" : "distance",
+            "annotations" : "distance,duration",
 
         }
         headers = {
                     "User-Agent" : "LRO-route-optimizer/1.0"
                 }
-        response = requests.get(
-            url,
-            params=params,
-            headers=headers,
-            timeout=10
-        )
+        started_at = perf_counter()
+        try:
+            response = requests.get(
+                url,
+                params=params,
+                headers=headers,
+                timeout=10
+            )
+        finally:
+            _print_external_service_timing(
+                "OSRM",
+                "distance matrix request",
+                started_at,
+            )
         
         response.raise_for_status()
 
         data = response.json()
         
-        matrix = data['distances']
+        distance_matrix = data['distances']
+        duration_matrix = data['durations']
 
-        rows,cols = len(matrix),len(matrix[0])
+        for r in range(len(distance_matrix)):
+            for c in range(len(distance_matrix[r])):
+                distance_matrix[r][c] = round(distance_matrix[r][c])
+       
 
-        for r in range(rows):
-            for c in range(cols):
-                matrix[r][c] = int(matrix[r][c] * 10)
+        return [distance_matrix,duration_matrix]
 
-        return matrix
-
-    def get_optimal_route(self,coords):
+    def get_optimal_route(self, coords, operation="route geometry request"):
 
 
         coordinates =""
@@ -66,12 +85,20 @@ class RoutingManager():
                     "User-Agent" : "LRO-route-optimizer/1.0"
                 }
         
-        response = requests.get(
-            url,
-            params=params,
-            headers=headers,
-            timeout=10
-        )
+        started_at = perf_counter()
+        try:
+            response = requests.get(
+                url,
+                params=params,
+                headers=headers,
+                timeout=10
+            )
+        finally:
+            _print_external_service_timing(
+                "OSRM",
+                operation,
+                started_at,
+            )
         
         response.raise_for_status()
         data = response.json()
@@ -87,8 +114,6 @@ class RoutingManager():
         }
 
         return final_data
-
-
 
 
 

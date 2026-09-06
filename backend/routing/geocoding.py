@@ -1,4 +1,5 @@
 import requests
+from time import perf_counter
 
 class Geocoding():
     def __init__(self):
@@ -18,12 +19,21 @@ class Geocoding():
             "User-Agent" : "LRO-route-optimizer/1.0"
         }
 
-        response = requests.get(
-            self.BASE_URL,
-            params=params,
-            headers=headers,
-            timeout=10
-        )
+        started_at = perf_counter()
+        try:
+            response = requests.get(
+                self.BASE_URL,
+                params=params,
+                headers=headers,
+                timeout=10
+            )
+        finally:
+            elapsed = perf_counter() - started_at
+            print(
+                "[PERF][EXTERNAL SERVICE] "
+                f"Nominatim | location search request | {elapsed:.3f}s",
+                flush=True,
+            )
         response.raise_for_status()
 
         data = response.json()
@@ -40,4 +50,3 @@ class Geocoding():
             results.append(result)
 
         return results
-    
